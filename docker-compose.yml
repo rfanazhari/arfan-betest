@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    restart: always
+    container_name: mongo_arfan_betest
+    ports:
+      - "27018:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=fan
+      - MONGO_INITDB_ROOT_PASSWORD=lupa_password
+      - MONGO_INITDB_DATABASE=db_arfan_betest
+    volumes:
+      - ./deployment/mongodb/mongoInit.js:/docker-entrypoint-initdb.d/init-db-tsurvey.js:ro
+    networks:
+      - express_net
+
+  redis:
+    container_name: redis_arfan_betest
+    image: redis:latest
+    command: redis-server --requirepass your_redis_password
+    ports:
+      - "6379:6379"
+    networks:
+      - express_net
+
+  expressBackend:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: express_image
+    container_name: ms-arfan_betest
+    environment:
+      - PORT=3001
+      - MONGO_URL=mongodb://fan:lupa_password@mongo_arfan_betest:27017/db_arfan_betest
+      - TOKEN_SECRET=whosyourdaddy
+      - TOKEN_EXP=5h
+      - TIME_ZONE=Asia/Jakarta
+      - REDIS_HOST=redis_arfan_betest
+      - REDIS_PASSWORD=your_redis_password
+      - REDIS_PORT=6379
+    command: npm run start
+    ports:
+      - "3001:3001"
+    networks:
+      - express_net
+    depends_on:
+      - mongodb
+      - redis
+
+networks:
+  express_net:
+    driver: bridge
